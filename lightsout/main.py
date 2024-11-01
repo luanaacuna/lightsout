@@ -61,6 +61,7 @@ def solucionarLightsOut(matriz):
             if j < size - 1:  # Celda derecha
                 sistema_ecuaciones[indice, i * size + (j + 1)] = 1
 
+
     # Aplicar eliminación de Gauss-Jordan en módulo 2
     augmented_matrix = np.concatenate((sistema_ecuaciones, valores_finales.reshape(-1, 1)), axis=1) % 2
     solucion = gauss_jordan_mod2(augmented_matrix)
