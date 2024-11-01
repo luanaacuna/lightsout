@@ -1,4 +1,3 @@
-
 import numpy as np
 import tkinter as tk
 from tkinter import messagebox
@@ -39,35 +38,62 @@ def procesarMatriz(matriz_entries, size):
         messagebox.showinfo("Resultado", "El sistema no tiene solución")
 
 def solucionarLightsOut(matriz):
-    cantidad_elementos = matriz.size
-    sistema_ecuaciones = []
-    valores_finales = []
+    size = matriz.shape[0]
+    cantidad_elementos = size * size
 
-    # Generación del sistema de ecuaciones
-    for f in range(len(matriz)):
-        ecuacion = []
-        for c in range(len(matriz[f])):
-            if matriz[f][c] == 1:
-                ecuacion.append((f, c))  # Guarda coordenadas
-            # Añade vecinos
-            if c + 1 < len(matriz[f]):
-                ecuacion.append((f, c + 1))
-            if f + 1 < len(matriz):
-                ecuacion.append((f + 1, c))
-            if c - 1 >= 0:
-                ecuacion.append((f, c - 1))
-            if f - 1 >= 0:
-                ecuacion.append((f - 1, c))
+    # Construir el sistema de ecuaciones en módulo 2
+    sistema_ecuaciones = np.zeros((cantidad_elementos, cantidad_elementos), dtype=int)
+    valores_finales = matriz.flatten()
 
-        sistema_ecuaciones.append(ecuacion)
-        valores_finales.append(matriz[f])
+    # Llenar la matriz del sistema de ecuaciones
+    for i in range(size):
+        for j in range(size):
+            indice = i * size + j
+            # El propio botón
+            sistema_ecuaciones[indice, indice] = 1
+            # Vecinos
+            if i > 0:  # Celda de arriba
+                sistema_ecuaciones[indice, (i - 1) * size + j] = 1
+            if i < size - 1:  # Celda de abajo
+                sistema_ecuaciones[indice, (i + 1) * size + j] = 1
+            if j > 0:  # Celda izquierda
+                sistema_ecuaciones[indice, i * size + (j - 1)] = 1
+            if j < size - 1:  # Celda derecha
+                sistema_ecuaciones[indice, i * size + (j + 1)] = 1
 
-    valores_finales = np.array(valores_finales).flatten()
-    return escalarMatriz(sistema_ecuaciones, valores_finales)
 
-def escalarMatriz(sistema_ecuaciones, valores_finales):
+    # Aplicar eliminación de Gauss-Jordan en módulo 2
+    augmented_matrix = np.concatenate((sistema_ecuaciones, valores_finales.reshape(-1, 1)), axis=1) % 2
+    solucion = gauss_jordan_mod2(augmented_matrix)
     
-    return [1] * len(valores_finales) 
+    if solucion is None:
+        return None  # No hay solución
+    return solucion
+
+def gauss_jordan_mod2(matrix):
+    rows, cols = matrix.shape
+    for i in range(rows):
+        if matrix[i, i] == 0:
+            # Intentar encontrar una fila con un 1 en la misma columna para intercambiar
+            for j in range(i + 1, rows):
+                if matrix[j, i] == 1:
+                    matrix[[i, j]] = matrix[[j, i]]
+                    break
+            else:
+                # No se encontró fila para intercambiar, continuar al siguiente pivote
+                continue
+        # Hacer el pivote igual a 1
+        matrix[i] = matrix[i] % 2  # Mantener todo en módulo 2
+        # Eliminar el 1 en otras filas de la columna actual
+        for j in range(rows):
+            if j != i and matrix[j, i] == 1:
+                matrix[j] = (matrix[j] + matrix[i]) % 2
+    # Revisar si existe una solución única
+    for i in range(rows):
+        if matrix[i, :-1].sum() == 0 and matrix[i, -1] == 1:
+            return None  # No hay solución
+    # Extraer solución
+    return matrix[:, -1] % 2
 
 def mostrarSolucion(solucion):
     ventana_solucion = tk.Toplevel()
@@ -86,3 +112,4 @@ btn_obtener = tk.Button(root, text="Obtener tamaño de la matriz", command=obten
 btn_obtener.pack()
 
 root.mainloop()
+
